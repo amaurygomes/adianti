@@ -1,0 +1,74 @@
+services:
+
+  adianti:
+    build:
+      context: .
+    container_name: adianti
+    restart: always
+    user: "www-data"
+    ports:
+      - "80:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./src/app/database:/var/www/html/app/database
+      #- ./docker/php/adianti-prod.ini:/usr/local/etc/php/conf.d/adianti.ini #  Usar em producao
+      - ./docker/php/adianti-dev.ini:/usr/local/etc/php/conf.d/adianti.ini # Usar em desenvolvimento
+      - ./src/app/cache:/var/www/html/app/cache
+      - ./src/app/log:/var/www/html/app/log
+    command: apache2-foreground
+    networks:
+      - adianti_network
+    depends_on:
+      - postgres     
+      - redis      
+      - rabbitmq   
+
+  postgres:
+    image: postgres:15-alpine 
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} 
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data 
+    ports:
+      - "5432:5432" # Remover em producao
+    networks:
+      - adianti_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379" # Remover em producao
+    networks:
+      - adianti_network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq_broker
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    ports:
+      - "15672:15672" # Management UI
+      - "5672:5672"   # AMQP protocol
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - adianti_network
+
+networks:
+  adianti_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:

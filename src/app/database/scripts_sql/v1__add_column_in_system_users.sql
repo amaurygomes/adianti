@@ -1,0 +1,3 @@
+ALTER TABLE system_users
+    ADD COLUMN cpf VARCHAR(14),
+    ADD COLUMN vtr VARCHAR(10);
